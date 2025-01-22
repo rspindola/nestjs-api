@@ -7,16 +7,18 @@ import { PrismaService } from './../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { AuthEntity } from './entity/auth.entity';
 import * as bcrypt from 'bcrypt';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
   ) {}
 
   async login(email: string, password: string): Promise<AuthEntity> {
-    const user = await this.prisma.user.findUnique({ where: { email: email } });
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       throw new NotFoundException(`No user found for email: ${email}`);
@@ -28,8 +30,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
+    // Retorna um token JWT assinado
     return {
       accessToken: this.jwtService.sign({ userId: user.id }),
     };
+  }
+
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usersService.findByEmail(email);
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user; // Remove a senha do retorno
+      return result;
+    }
+    return null;
   }
 }

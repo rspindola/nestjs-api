@@ -23,12 +23,18 @@ export class UsersService {
     });
   }
 
-  findAll() {
-    return this.prisma.user.findMany();
+  async findAll() {
+    const users = await this.prisma.user.findMany();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return users.map(({ password, ...result }) => result); // Remove a senha do retorno
   }
 
   findOne(id: number) {
     return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async findByEmail(email: string): Promise<any> {
+    return this.prisma.user.findUnique({ where: { email } });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
