@@ -1,17 +1,45 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthEntity } from './entity/auth.entity';
 import { LoginDto } from './dto/create-auth.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('signUp')
+  @ApiOkResponse({ type: AuthEntity })
+  signUp(@Body() { email, password }: LoginDto) {
+    return this.authService.signUp(email, password);
+  }
+
   @Post('login')
   @ApiOkResponse({ type: AuthEntity })
   login(@Body() { email, password }: LoginDto) {
     return this.authService.login(email, password);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  me(@Req() req) {
+    return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('logout')
+  async logout(@Req() req) {
+    return new Promise((resolve, reject) => {
+      req.logout((err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve({ message: 'Logout realizado com sucesso!' });
+      });
+    });
   }
 }

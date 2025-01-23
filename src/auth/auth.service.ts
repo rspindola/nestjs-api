@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -8,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthEntity } from './entity/auth.entity';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +18,31 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
   ) {}
+
+  async signUp(email: string, password: string): Promise<AuthEntity> {
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+        },
+      });
+
+      return {
+        accessToken: this.jwtService.sign({ userId: user.id }),
+      };
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException(`Email ${email} already used.`);
+      }
+      throw new Error(e);
+    }
+  }
 
   async login(email: string, password: string): Promise<AuthEntity> {
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -30,7 +57,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
-    // Retorna um token JWT assinado
     return {
       accessToken: this.jwtService.sign({ userId: user.id }),
     };
