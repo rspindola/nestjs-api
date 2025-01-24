@@ -2,7 +2,7 @@ import { Controller, Post, Body, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthEntity } from './entity/auth.entity';
-import { LoginDto } from './dto/create-auth.dto';
+import { LoginDto, SignUpDto } from './dto/create-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
@@ -12,8 +12,8 @@ export class AuthController {
 
   @Post('signUp')
   @ApiOkResponse({ type: AuthEntity })
-  signUp(@Body() { email, password }: LoginDto) {
-    return this.authService.signUp(email, password);
+  signUp(@Body() { name, email, password }: SignUpDto) {
+    return this.authService.signUp(name, email, password);
   }
 
   @Post('login')

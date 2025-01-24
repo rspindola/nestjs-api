@@ -19,12 +19,17 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async signUp(email: string, password: string): Promise<AuthEntity> {
+  async signUp(
+    name: string,
+    email: string,
+    password: string,
+  ): Promise<AuthEntity> {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const user = await this.prisma.user.create({
         data: {
+          name,
           email,
           password: hashedPassword,
         },

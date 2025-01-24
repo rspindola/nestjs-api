@@ -1,19 +1,28 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
-export const roundsOfHashing = 10;
-
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly roundsOfHashing: number;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
+    this.roundsOfHashing = parseInt(
+      this.configService.get<string>('security.roundsOfHashing', '10'),
+      10,
+    );
+  }
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
-      roundsOfHashing,
+      this.roundsOfHashing,
     );
 
     createUserDto.password = hashedPassword;
@@ -26,7 +35,7 @@ export class UsersService {
   async findAll() {
     const users = await this.prisma.user.findMany();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return users.map(({ password, ...result }) => result); // Remove a senha do retorno
+    return users.map(({ password, ...result }) => result);
   }
 
   findOne(id: number) {
@@ -41,7 +50,7 @@ export class UsersService {
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(
         updateUserDto.password,
-        roundsOfHashing,
+        this.roundsOfHashing,
       );
     }
 

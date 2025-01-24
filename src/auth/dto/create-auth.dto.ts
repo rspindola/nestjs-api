@@ -13,3 +13,21 @@ export class LoginDto {
   @ApiProperty()
   password: string;
 }
+
+export class SignUpDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  name: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  @ApiProperty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  @ApiProperty()
+  password: string;
+}
