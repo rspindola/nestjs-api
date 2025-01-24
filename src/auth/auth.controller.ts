@@ -1,8 +1,14 @@
 import { Controller, Post, Body, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthEntity } from './entity/auth.entity';
 import { LoginDto, SignUpDto } from './dto/create-auth.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
@@ -22,6 +28,14 @@ export class AuthController {
     return this.authService.login(email, password);
   }
 
+  @Post('refresh')
+  @ApiBody({ type: RefreshTokenDto })
+  @ApiOkResponse({ type: AuthEntity })
+  refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenDto;
+    return this.authService.refresh(refreshToken);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -33,13 +47,7 @@ export class AuthController {
   @ApiBearerAuth()
   @Post('logout')
   async logout(@Req() req) {
-    return new Promise((resolve, reject) => {
-      req.logout((err) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve({ message: 'Logout realizado com sucesso!' });
-      });
-    });
+    //TODO: criar logou
+    return true;
   }
 }

@@ -1,23 +1,56 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from './../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { AuthEntity } from './entity/auth.entity';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from 'src/users/users.service';
-import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
+
+  private generateTokens(userId: number) {
+    const jwtAccessSecret = this.configService.get<string>(
+      'security.jwtAccessSecret',
+    );
+    const jwtRefreshSecret = this.configService.get<string>(
+      'security.jwtRefreshSecret',
+    );
+    const jwtAccessExpiration = this.configService.get<string>(
+      'security.jwtAccessExpiration',
+    );
+    const jwtRefreshExpiration = this.configService.get<string>(
+      'security.jwtRefreshExpiration',
+    );
+
+    const accessToken = this.jwtService.sign(
+      { userId },
+      {
+        secret: jwtAccessSecret,
+        expiresIn: jwtAccessExpiration,
+      },
+    );
+
+    const refreshToken = this.jwtService.sign(
+      { userId },
+      {
+        secret: jwtRefreshSecret,
+        expiresIn: jwtRefreshExpiration,
+      },
+    );
+
+    return { accessToken, refreshToken };
+  }
 
   async signUp(
     name: string,
@@ -27,22 +60,15 @@ export class AuthService {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await this.prisma.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-        },
+      const user = await this.usersService.create({
+        name,
+        email,
+        password: hashedPassword,
       });
 
-      return {
-        accessToken: this.jwtService.sign({ userId: user.id }),
-      };
+      return this.generateTokens(user.id);
     } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2002'
-      ) {
+      if (e.code === 'P2002') {
         throw new ConflictException(`Email ${email} already used.`);
       }
       throw new Error(e);
@@ -50,7 +76,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<AuthEntity> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.usersService.findByEmail(email);
 
     if (!user) {
       throw new NotFoundException(`No user found for email: ${email}`);
@@ -62,19 +88,24 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
-    return {
-      accessToken: this.jwtService.sign({ userId: user.id }),
-    };
+    return this.generateTokens(user.id);
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
+  async refresh(refreshToken: string): Promise<AuthEntity> {
+    try {
+      const jwtRefreshSecret = this.configService.get<string>(
+        'security.jwtRefreshSecret',
+      );
 
-    if (user && (await bcrypt.compare(password, user.password))) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user; // Remove a senha do retorno
-      return result;
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: jwtRefreshSecret,
+      });
+
+      const userId = Number(payload.userId);
+
+      return this.generateTokens(userId);
+    } catch (e) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
-    return null;
   }
 }

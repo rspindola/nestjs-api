@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -34,11 +35,10 @@ export class UsersService {
 
   async findAll() {
     const users = await this.prisma.user.findMany();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return users.map(({ password, ...result }) => result);
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
