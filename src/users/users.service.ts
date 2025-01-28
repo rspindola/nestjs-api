@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +21,18 @@ export class UsersService {
     );
   }
 
+  async assignRole(userId: number, roleName: string) {
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
+    if (!role) throw new Error(`Role ${roleName} not found`);
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { roleId: role.id },
+    });
+  }
+
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
@@ -28,9 +41,19 @@ export class UsersService {
 
     createUserDto.password = hashedPassword;
 
-    return this.prisma.user.create({
-      data: createUserDto,
-    });
+    try {
+      return await this.prisma.user.create({
+        data: createUserDto,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('This email is already in use.');
+      }
+      throw error;
+    }
   }
 
   async findAll() {
