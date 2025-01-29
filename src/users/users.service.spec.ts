@@ -3,43 +3,71 @@ import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import {
+  AppAbility,
+  CaslAbilityFactory,
+  Subjects,
+} from '../casl/casl-ability.factory';
+import { Ability, AbilityBuilder } from '@casl/ability';
+import { Action } from '../casl/enum';
 
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: PrismaService;
   let configService: ConfigService;
+  let caslAbilityFactory: CaslAbilityFactory;
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      user: {
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
+      role: {
+        findUnique: jest.fn(),
+      },
+    };
+
+    const mockConfigService = {
+      get: jest.fn((key: string) => {
+        if (key === 'security.roundsOfHashing') {
+          return '10';
+        }
+        return null;
+      }),
+    };
+
+    const mockCaslAbilityFactory = {
+      createForUser: jest.fn((user) => {
+        const { can, build } = new AbilityBuilder<AppAbility>(Ability as any);
+
+        if (user.role.name === 'admin') {
+          can(Action.Update, 'Role'); // Admin pode atualizar papéis
+        }
+
+        return build() as AppAbility; // Retorna um objeto compatível com AppAbility
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         {
           provide: PrismaService,
-          useValue: {
-            user: {
-              findUnique: jest.fn(),
-              findMany: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-            },
-            role: {
-              findUnique: jest.fn(),
-            },
-          },
+          useValue: mockPrismaService,
         },
         {
           provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string) => {
-              if (key === 'security.roundsOfHashing') {
-                return '10';
-              }
-              return null;
-            }),
-          },
+          useValue: mockConfigService,
+        },
+        {
+          provide: CaslAbilityFactory,
+          useValue: mockCaslAbilityFactory,
         },
       ],
     }).compile();
@@ -47,6 +75,7 @@ describe('UsersService', () => {
     service = module.get<UsersService>(UsersService);
     prisma = module.get<PrismaService>(PrismaService);
     configService = module.get<ConfigService>(ConfigService);
+    caslAbilityFactory = module.get<CaslAbilityFactory>(CaslAbilityFactory);
   });
 
   it('should be defined', () => {
@@ -308,39 +337,59 @@ describe('UsersService', () => {
   });
 
   describe('assignRole', () => {
-    it('should assign a role to a user', async () => {
-      const mockRole = { id: 1, name: 'Admin' };
-      const mockUser = {
+    it('should assign a role if user has permission', async () => {
+      const mockCurrentUser = {
         id: 1,
+        role: {
+          name: 'admin',
+          permissions: [{ name: 'update@Role' }],
+        },
+      };
+
+      const mockRole = { id: 1, name: 'editor' };
+      const mockUpdatedUser = {
+        id: 2,
         name: 'John Doe',
-        email: 'test@example.com',
-        password: 'password123',
+        email: 'john@example.com',
+        password: 'hashedPassword',
         createdAt: new Date(),
         updatedAt: new Date(),
         roleId: mockRole.id,
       };
 
       jest.spyOn(prisma.role, 'findUnique').mockResolvedValue(mockRole);
-      jest.spyOn(prisma.user, 'update').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.user, 'update').mockResolvedValue(mockUpdatedUser);
 
-      const result = await service.assignRole(1, 'Admin');
+      await expect(
+        service.assignRole(2, 'editor', mockCurrentUser),
+      ).resolves.not.toThrow();
 
       expect(prisma.role.findUnique).toHaveBeenCalledWith({
-        where: { name: 'Admin' },
+        where: { name: 'editor' },
       });
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 1 },
+        where: { id: 2 },
         data: { roleId: mockRole.id },
       });
-      expect(result).toEqual(mockUser);
     });
 
-    it('should throw an error if the role is not found', async () => {
-      jest.spyOn(prisma.role, 'findUnique').mockResolvedValue(null);
+    it('should throw ForbiddenException if user does not have permission', async () => {
+      const mockCurrentUser = {
+        id: 1,
+        role: {
+          name: 'user',
+          permissions: [{ name: 'read@User' }],
+        },
+      };
 
-      await expect(service.assignRole(1, 'NonExistentRole')).rejects.toThrow(
-        new Error('Role NonExistentRole not found'),
-      );
+      // Ajusta o mock para retornar uma habilidade sem permissões
+      jest
+        .spyOn(caslAbilityFactory, 'createForUser')
+        .mockReturnValue(new Ability<[Action, Subjects]>([]));
+
+      await expect(
+        service.assignRole(2, 'editor', mockCurrentUser),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

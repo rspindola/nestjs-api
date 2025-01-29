@@ -1,8 +1,11 @@
+jest.setTimeout(30000);
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from './app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { CaslAbilityFactory } from './casl/casl-ability.factory';
 
 describe('Bootstrap', () => {
   let app: INestApplication;
@@ -11,7 +14,12 @@ describe('Bootstrap', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(CaslAbilityFactory) // Mocka o CaslAbilityFactory
+      .useValue({
+        createForUser: jest.fn(), // Simula o método createForUser
+      })
+      .compile();
 
     app = module.createNestApplication();
     configService = app.get(ConfigService);

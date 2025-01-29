@@ -1,11 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppAbility, CaslAbilityFactory } from '../casl/casl-ability.factory';
+import { Action } from '../casl/enum';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +19,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {
     this.roundsOfHashing = parseInt(
       this.configService.get<string>('security.roundsOfHashing', '10'),
@@ -21,7 +27,16 @@ export class UsersService {
     );
   }
 
-  async assignRole(userId: number, roleName: string) {
+  async assignRole(userId: number, roleName: string, currentUser: any) {
+    const ability: AppAbility =
+      this.caslAbilityFactory.createForUser(currentUser);
+
+    if (!ability.can(Action.Update, 'Role')) {
+      throw new ForbiddenException(
+        'You do not have permission to assign roles.',
+      );
+    }
+
     const role = await this.prisma.role.findUnique({
       where: { name: roleName },
     });

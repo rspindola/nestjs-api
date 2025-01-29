@@ -5,27 +5,20 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity } from './entities/user.entity';
 import { Reflector } from '@nestjs/core';
+import { PoliciesGuard } from '../casl/policies.guard';
+import { CaslAbilityFactory } from '../casl/casl-ability.factory';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let service: UsersService;
 
   beforeEach(async () => {
-    const mockRolesGuard = {
+    const mockPoliciesGuard = {
       canActivate: jest.fn(() => true), // Sempre permite acesso
     };
 
-    const mockPrismaService = {
-      user: {
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-      },
-      role: {
-        findUnique: jest.fn(),
-      },
+    const mockCaslAbilityFactory = {
+      createForUser: jest.fn(), // Mocka o método createForUser
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -39,16 +32,17 @@ describe('UsersController', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
+            assignRole: jest.fn(),
           },
         },
         Reflector,
         {
-          provide: 'RolesGuard', // Mocka explicitamente o RolesGuard
-          useValue: mockRolesGuard,
+          provide: PoliciesGuard, // Mocka explicitamente o PoliciesGuard
+          useValue: mockPoliciesGuard,
         },
         {
-          provide: 'PrismaService', // Mocka explicitamente o PrismaService
-          useValue: mockPrismaService,
+          provide: CaslAbilityFactory, // Mocka explicitamente o CaslAbilityFactory
+          useValue: mockCaslAbilityFactory,
         },
       ],
     }).compile();

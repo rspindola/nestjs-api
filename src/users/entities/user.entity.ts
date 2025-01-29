@@ -27,4 +27,10 @@ export class UserEntity implements User {
 
   @ApiProperty({ required: false, nullable: true })
   roleId: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  role?: {
+    name: string;
+    permissions: { name: string }[];
+  };
 }

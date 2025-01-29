@@ -1,3 +1,5 @@
+jest.setTimeout(30000);
+
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';

@@ -13,4 +13,17 @@ export class PrismaService
   async onModuleDestroy() {
     await this.$disconnect();
   }
+
+  async getUserWithPermissions(userId: number) {
+    return this.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            permissions: true,
+          },
+        },
+      },
+    });
+  }
 }
