@@ -1,99 +1,153 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# NestJS API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este repositório contém uma API construída com NestJS, Prisma e PostgreSQL. A seguir, você encontrará as instruções para rodar o projeto em um ambiente local utilizando Docker.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Pré-requisitos
 
-## Description
+Antes de começar, você precisará de algumas ferramentas instaladas no seu ambiente:
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Docker**: [Como instalar o Docker](https://docs.docker.com/get-docker/)
+- **Docker Compose**: [Como instalar o Docker Compose](https://docs.docker.com/compose/install/)
+- **Node.js** (preferencialmente v20.18.1 ou superior): [Como instalar o Node.js](https://nodejs.org/)
+- **NVM** (Node Version Manager): [Como instalar o NVM](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Yarn** (opcional, mas recomendado): [Como instalar o Yarn](https://classic.yarnpkg.com/en/docs/install/)
 
-## Project setup
+## Clonando o Repositório
+
+Clone o repositório para o seu ambiente local:
 
 ```bash
-$ yarn install
+git clone https://github.com/rspindola/nestjs-api
+cd nestjs-api
 ```
 
-## Compile and run the project
+## Configuração do Ambiente
+
+Antes de rodar a aplicação, você precisa configurar algumas variáveis de ambiente. Para isso, siga os seguintes passos:
+
+### 1. Crie o arquivo `.env`
+
+Na raiz do repositório, crie um arquivo `.env` e preencha com as seguintes variáveis de ambiente:
+
+```dotenv
+# Banco de Dados (PostgreSQL)
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=mypassword
+POSTGRES_DB=mydatabase
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+# JWT (JSON Web Token)
+JWT_ACCESS_SECRET=your_access_secret
+JWT_REFRESH_SECRET=your_refresh_secret
+JWT_ACCESS_EXPIRATION=60s
+JWT_REFRESH_EXPIRATION=3m
+
+# Hashing de Senha
+ROUNDS_OF_HASHING=10
+```
+
+> **Nota**: O valor de `DATABASE_URL` já é preenchido automaticamente de acordo com as variáveis `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB` no Docker Compose.
+
+### 2. Configuração do Docker Compose
+
+O repositório já inclui um arquivo `docker-compose.yml` configurado para rodar o PostgreSQL. Se você quiser rodar a aplicação utilizando Docker, siga os passos abaixo.
+
+## Rodando o Banco de Dados e a API com Docker
+
+### 1. Rodar os containers com Docker Compose
+
+Execute o seguinte comando para iniciar os containers (PostgreSQL e sua aplicação) em segundo plano:
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+docker-compose up -d
 ```
 
-## Run tests
+Este comando irá:
+
+- Subir o container do PostgreSQL configurado no arquivo `docker-compose.yml`.
+- Criar a URL de conexão do banco de dados automaticamente.
+- Rodar a aplicação (se houver outro serviço configurado, como a API NestJS).
+
+### 2. Verificar o status dos containers
+
+Para verificar o status dos containers, você pode usar:
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+docker-compose ps
 ```
 
-## Deployment
+### 3. Rodar as migrações com Prisma
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Após subir os containers, você precisará rodar as migrações do Prisma para configurar o banco de dados. Para isso, execute o seguinte comando:
 
 ```bash
-$ yarn install -g mau
-$ mau deploy
+docker-compose exec backend npx prisma migrate dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+> **Nota**: Este comando irá aplicar as migrações no banco de dados PostgreSQL e gerar o Prisma Client.
 
-## Resources
+### 4. Gerar o Prisma Client
 
-Check out a few resources that may come in handy when working with NestJS:
+Caso você queira gerar manualmente o Prisma Client, use o comando abaixo:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+docker-compose exec backend npx prisma generate
+```
 
-## Support
+## Rodando os Testes
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Para rodar os testes (se você tiver configurado um ambiente de testes no seu projeto), use:
 
-## Stay in touch
+```bash
+docker-compose exec backend yarn test
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Parar os Containers
 
-## License
+Para parar os containers, execute:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+docker-compose down
+```
+
+Isso irá parar e remover todos os containers criados pelo docker-compose up.
+
+## Executando a API Localmente (Sem Docker)
+
+Se preferir rodar a API localmente, sem o uso de Docker, siga os passos abaixo:
+
+### 1. Instalar dependências
+
+Instale as dependências do projeto:
+
+```bash
+yarn install
+```
+
+Ou, se você preferir usar o npm:
+
+```bash
+npm install
+```
+
+### 1. Rodar a aplicação localmente
+
+Com as dependências instaladas, você pode rodar o servidor localmente com:
+
+```bash
+yarn start:dev
+```
+
+Ou, usando npm:
+
+```bash
+npm run start:dev
+```
+
+Isso irá rodar a API em <http://localhost:3000>.
+
+## Considerações Finais
+
+Esse projeto usa NestJS, Prisma e PostgreSQL. Certifique-se de preencher corretamente o arquivo .env com as variáveis de ambiente e de rodar as migrações do Prisma para configurar seu banco de dados.
+
+Se você tiver dúvidas ou encontrar algum erro, sinta-se à vontade para abrir um Issue no repositório!
