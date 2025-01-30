@@ -9,7 +9,6 @@ import { Prisma } from '@prisma/client';
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: PrismaService;
-  let configService: ConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -24,9 +23,6 @@ describe('UsersService', () => {
               create: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
-            },
-            role: {
-              findUnique: jest.fn(),
             },
           },
         },
@@ -46,7 +42,6 @@ describe('UsersService', () => {
 
     service = module.get<UsersService>(UsersService);
     prisma = module.get<PrismaService>(PrismaService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -70,7 +65,6 @@ describe('UsersService', () => {
         password: hashedPassword,
         createdAt: new Date(),
         updatedAt: new Date(),
-        roleId: null,
       });
 
       const result = await service.create(createUserDto);
@@ -90,7 +84,6 @@ describe('UsersService', () => {
         password: hashedPassword,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
-        roleId: null,
       });
     });
 
@@ -140,7 +133,6 @@ describe('UsersService', () => {
         password: 'hashedPassword',
         createdAt: new Date(),
         updatedAt: new Date(),
-        roleId: null,
       };
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
@@ -175,7 +167,6 @@ describe('UsersService', () => {
           password: 'password1',
           createdAt: new Date(),
           updatedAt: new Date(),
-          roleId: null,
         },
         {
           id: 2,
@@ -184,7 +175,6 @@ describe('UsersService', () => {
           password: 'password2',
           createdAt: new Date(),
           updatedAt: new Date(),
-          roleId: null,
         },
       ];
 
@@ -200,7 +190,6 @@ describe('UsersService', () => {
           email: 'test1@example.com',
           createdAt: expect.any(Date),
           updatedAt: expect.any(Date),
-          roleId: null,
         },
         {
           id: 2,
@@ -208,7 +197,6 @@ describe('UsersService', () => {
           email: 'test2@example.com',
           createdAt: expect.any(Date),
           updatedAt: expect.any(Date),
-          roleId: null,
         },
       ]);
     });
@@ -223,7 +211,6 @@ describe('UsersService', () => {
         password: 'password123',
         createdAt: new Date(),
         updatedAt: new Date(),
-        roleId: null,
       };
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
@@ -245,7 +232,6 @@ describe('UsersService', () => {
         password: 'password123',
         createdAt: new Date(),
         updatedAt: new Date(),
-        roleId: null,
       };
 
       jest.spyOn(prisma.user, 'update').mockResolvedValue(mockUser);
@@ -269,7 +255,6 @@ describe('UsersService', () => {
         password: hashedPassword,
         createdAt: new Date(),
         updatedAt: new Date(),
-        roleId: null,
       };
 
       jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword);
@@ -295,7 +280,6 @@ describe('UsersService', () => {
         password: 'password123',
         createdAt: new Date(),
         updatedAt: new Date(),
-        roleId: null,
       };
 
       jest.spyOn(prisma.user, 'delete').mockResolvedValue(mockUser);
@@ -304,43 +288,6 @@ describe('UsersService', () => {
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(result).toEqual(mockUser);
-    });
-  });
-
-  describe('assignRole', () => {
-    it('should assign a role to a user', async () => {
-      const mockRole = { id: 1, name: 'Admin' };
-      const mockUser = {
-        id: 1,
-        name: 'John Doe',
-        email: 'test@example.com',
-        password: 'password123',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        roleId: mockRole.id,
-      };
-
-      jest.spyOn(prisma.role, 'findUnique').mockResolvedValue(mockRole);
-      jest.spyOn(prisma.user, 'update').mockResolvedValue(mockUser);
-
-      const result = await service.assignRole(1, 'Admin');
-
-      expect(prisma.role.findUnique).toHaveBeenCalledWith({
-        where: { name: 'Admin' },
-      });
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { roleId: mockRole.id },
-      });
-      expect(result).toEqual(mockUser);
-    });
-
-    it('should throw an error if the role is not found', async () => {
-      jest.spyOn(prisma.role, 'findUnique').mockResolvedValue(null);
-
-      await expect(service.assignRole(1, 'NonExistentRole')).rejects.toThrow(
-        new Error('Role NonExistentRole not found'),
-      );
     });
   });
 });

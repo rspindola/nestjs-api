@@ -21,18 +21,6 @@ export class UsersService {
     );
   }
 
-  async assignRole(userId: number, roleName: string) {
-    const role = await this.prisma.role.findUnique({
-      where: { name: roleName },
-    });
-    if (!role) throw new Error(`Role ${roleName} not found`);
-
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { roleId: role.id },
-    });
-  }
-
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,

@@ -46,7 +46,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('logout')
-  async logout(@Req() req) {
+  async logout() {
     //TODO: criar logou
     return true;
   }

@@ -101,8 +101,7 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('should return true (placeholder for future implementation)', async () => {
-      const req = {};
-      expect(await controller.logout(req)).toBe(true);
+      expect(await controller.logout()).toBe(true);
     });
   });
 });

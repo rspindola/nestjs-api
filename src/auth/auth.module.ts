@@ -8,7 +8,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
